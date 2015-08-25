@@ -1,0 +1,31 @@
+{
+    "name": "acelaya/php-persistent-login",
+    "description": "A package that provides an abstraction layer to manage persistent login sessions in PHP applications",
+    "type": "library",
+    "license": "MIT",
+    "keywords": [
+        "persistent",
+        "login",
+        "session"
+    ],
+    "authors": [
+        {
+            "name": "Alejandro Celaya Alastrué",
+            "email": "alejandro@alejandrocelaya.com"
+        }
+    ],
+    "require-dev": {
+        "phpunit/phpunit": "~4.0",
+        "squizlabs/php_codesniffer": "~2.0"
+    },
+    "autoload": {
+        "psr-4": {
+            "Acelaya\\PeristentLogin\\": "src"
+        }
+    },
+    "autoload-dev": {
+        "psr-4": {
+            "AcelayaTest\\PersistentLogin\\": "tests"
+        }
+    }
+}
