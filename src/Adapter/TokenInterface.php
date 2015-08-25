@@ -21,9 +21,9 @@ interface TokenInterface
      * Sets the token that identifies this session to be valid until expiration time
      *
      * @param $value
-     * @param $lifetime
+     * @param \DateTime $expirationDate
      */
-    public function setToken($value, $lifetime);
+    public function setToken($value, \DateTime $expirationDate);
 
     /**
      * Invalidates current token if exists

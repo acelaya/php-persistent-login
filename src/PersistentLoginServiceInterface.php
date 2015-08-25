@@ -6,6 +6,8 @@ use Acelaya\PersistentLogin\Identity\IdentityProviderInterface;
 
 interface PersistentLoginServiceInterface
 {
+    const DEFAULT_LIFETIME = 1209600; // Two weeks
+
     /**
      * Tries to authenticate by using current data.
      * A Result will be returned telling if it was possible to perform the authentication
@@ -13,12 +15,10 @@ interface PersistentLoginServiceInterface
      * @param AuthenticationInterface $authAdapter
      * @return Result
      */
-    public function authenticateWithCurrentLogin(AuthenticationInterface $authAdapter);
+    public function authenticate(AuthenticationInterface $authAdapter);
 
     /**
      * Invalidates the persistent login both in the storage and session adapters
-     *
-     * @return mixed
      */
     public function invalidateCurrentLogin();
 
@@ -27,9 +27,8 @@ interface PersistentLoginServiceInterface
      *
      * @param IdentityProviderInterface $identity
      * @param $lifetime
-     * @return mixed
      */
-    public function createNewLogin(IdentityProviderInterface $identity, $lifetime);
+    public function createNewLogin(IdentityProviderInterface $identity, $lifetime = self::DEFAULT_LIFETIME);
 
     /**
      * Checks if it is possible to try an authentication

@@ -2,10 +2,28 @@
 namespace Acelaya\PersistentLogin;
 
 use Acelaya\PersistentLogin\Adapter\AuthenticationInterface;
+use Acelaya\PersistentLogin\Adapter\StorageInterface;
+use Acelaya\PersistentLogin\Adapter\TokenInterface;
 use Acelaya\PersistentLogin\Identity\IdentityProviderInterface;
+use Acelaya\PersistentLogin\Model\PersistentSession;
 
 class PersistentLoginService implements PersistentLoginServiceInterface
 {
+    /**
+     * @var StorageInterface
+     */
+    protected $storageAdapter;
+    /**
+     * @var TokenInterface
+     */
+    protected $tokenAdapter;
+
+    public function __construct(StorageInterface $storageAdapter, TokenInterface $tokenAdapter)
+    {
+        $this->storageAdapter = $storageAdapter;
+        $this->tokenAdapter = $tokenAdapter;
+    }
+
     /**
      * Tries to authenticate by using current data.
      * A Result will be returned telling if it was possible to perform the authentication
@@ -13,19 +31,52 @@ class PersistentLoginService implements PersistentLoginServiceInterface
      * @param AuthenticationInterface $authAdapter
      * @return Result
      */
-    public function authenticateWithCurrentLogin(AuthenticationInterface $authAdapter)
+    public function authenticate(AuthenticationInterface $authAdapter)
     {
-        // TODO: Implement authenticateWithCurrentLogin() method.
+        if (! $this->hasPersistentLogin()) {
+            return new Result();
+        }
+
+        // Try to find a session identified by current token
+        $token = $this->tokenAdapter->getToken();
+        $session = $this->storageAdapter->findSessionByToken($token);
+        if (! isset($session)) {
+            return new Result();
+        }
+
+        // If this session has been invalidated, has expired or does not belong to a valid identity, don't continue
+        $identity = $session->getIdentity();
+        if ($session->hasExpired() || ! $session->isValid() || ! isset($identity)) {
+            return new Result();
+        }
+
+        // Try to authenticate this identity
+        $authenticated = $authAdapter->authenticate($identity);
+
+        // Regenarte persistent login, making it last until the old expiration date
+        if ($authenticated) {
+            $this->invalidateCurrentLogin();
+            $this->createNewLogin($identity, $session->getExpirationDate()->getTimestamp() - time());
+        }
+
+        return $authenticated;
     }
 
     /**
      * Invalidates the persistent login both in the storage and session adapters
-     *
-     * @return mixed
      */
     public function invalidateCurrentLogin()
     {
-        // TODO: Implement invalidateCurrentLogin() method.
+        if (! $this->hasPersistentLogin()) {
+            return;
+        }
+
+        // Invalidate the stored session
+        $token = $this->tokenAdapter->getToken();
+        $this->storageAdapter->invalidateSessionByToken($token);
+
+        // Invalidate the token too
+        $this->tokenAdapter->invalidateToken();
     }
 
     /**
@@ -33,11 +84,27 @@ class PersistentLoginService implements PersistentLoginServiceInterface
      *
      * @param IdentityProviderInterface $identity
      * @param $lifetime
-     * @return mixed
      */
-    public function createNewLogin(IdentityProviderInterface $identity, $lifetime)
+    public function createNewLogin(IdentityProviderInterface $identity, $lifetime = self::DEFAULT_LIFETIME)
     {
-        // TODO: Implement createNewLogin() method.
+        $expirationDate = new \DateTime();
+        $expirationDate->setTimestamp(time() + $lifetime);
+
+        // Create the hash of a unique ID prefixed by current date and identity
+        $token = hash(
+            'sha512',
+            sprintf('%s_%s_%s', date('YmdHis'), $identity->getIdentity(), uniqid())
+        );
+
+        // Persist this session in current storage
+        $this->storageAdapter->persistSession(
+            (new PersistentSession())->setToken($token)
+                                     ->setExpirationDate($expirationDate)
+                                     ->setIdentity($identity)
+                                     ->setValid()
+        );
+        // Persist the token too
+        $this->tokenAdapter->setToken($token, $expirationDate);
     }
 
     /**
@@ -47,6 +114,6 @@ class PersistentLoginService implements PersistentLoginServiceInterface
      */
     public function hasPersistentLogin()
     {
-        // TODO: Implement hasPersistentLogin() method.
+        return $this->tokenAdapter->hasToken();
     }
 }
