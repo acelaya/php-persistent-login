@@ -22,6 +22,11 @@ class PersistentSession
      */
     protected $valid;
 
+    public function __construct()
+    {
+        $this->valid = false;
+    }
+
     /**
      * @return string
      */
