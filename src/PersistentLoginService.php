@@ -59,7 +59,7 @@ class PersistentLoginService implements PersistentLoginServiceInterface
             $this->createNewLogin($identity, $session->getExpirationDate()->getTimestamp() - time());
         }
 
-        return $authenticated;
+        return new Result($session, $authenticated);
     }
 
     /**
