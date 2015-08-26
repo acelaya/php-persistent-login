@@ -14,6 +14,9 @@
             "email": "alejandro@alejandrocelaya.com"
         }
     ],
+    "require": {
+        "php": ">=5.4"
+    },
     "require-dev": {
         "phpunit/phpunit": "~4.0",
         "squizlabs/php_codesniffer": "~2.0"
