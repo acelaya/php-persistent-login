@@ -20,7 +20,7 @@
     },
     "autoload": {
         "psr-4": {
-            "Acelaya\\PeristentLogin\\": "src"
+            "Acelaya\\PersistentLogin\\": "src"
         }
     },
     "autoload-dev": {
