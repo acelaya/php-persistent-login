@@ -39,6 +39,7 @@ class TokenAdapterMock implements TokenInterface
      *
      * @param $value
      * @param \DateTime $expirationDate
+     * @return object|null
      */
     public function setToken($value, \DateTime $expirationDate)
     {
@@ -50,6 +51,7 @@ class TokenAdapterMock implements TokenInterface
 
     /**
      * Invalidates current token if exists
+     * @return object|null
      */
     public function invalidateToken()
     {

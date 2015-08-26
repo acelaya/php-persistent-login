@@ -3,6 +3,8 @@ namespace Acelaya\PersistentLogin\Adapter;
 
 interface TokenInterface
 {
+    const DEFAULT_TOKEN_NAME = 'persistent_login';
+
     /**
      * Tells if this session adapter has a session token
      *
@@ -22,11 +24,14 @@ interface TokenInterface
      *
      * @param $value
      * @param \DateTime $expirationDate
+     * @return object|null
      */
     public function setToken($value, \DateTime $expirationDate);
 
     /**
      * Invalidates current token if exists
+     *
+     * @return object|null
      */
     public function invalidateToken();
 }
