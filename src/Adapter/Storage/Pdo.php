@@ -2,6 +2,7 @@
 namespace Acelaya\PersistentLogin\Adapter\Storage;
 
 use Acelaya\PersistentLogin\Adapter\StorageInterface;
+use Acelaya\PersistentLogin\Exception\RuntimeException;
 use Acelaya\PersistentLogin\Model\PersistentSession;
 
 class Pdo implements StorageInterface
@@ -35,12 +36,8 @@ class Pdo implements StorageInterface
         $result = $statement->fetch(\PDO::FETCH_ASSOC);
 
         $session = new PersistentSession();
-        $session->setToken($token)
-                ->setValid(isset($result['valid']) && $result['valid'] === true)
-                ->setExpirationDate(
-                    new \DateTime(isset($result['expiration_date']) ? $result['expiration_date'] : 'now')
-                )
-                ->setIdentity(null); // TODO Set the identity somehow
+        // TODO Set the identity provider callable somehow
+        $session->exchangeArray($result);
 
         return $session;
     }
@@ -49,34 +46,44 @@ class Pdo implements StorageInterface
      * Sets the session of provided token as invalid
      *
      * @param $token
+     * @throws RuntimeException
      */
     public function invalidateSessionByToken($token)
     {
-        $statement = $this->pdo->prepare('DELETE FROM :table WHERE `token` = :token LIMIT 1');
-        $statement->bindValue('table', $this->tableName);
-        $statement->bindValue('token', $token);
-        $statement->execute();
+        try {
+            $statement = $this->pdo->prepare('DELETE FROM :table WHERE `token` = :token LIMIT 1');
+            $statement->bindValue('table', $this->tableName);
+            $statement->bindValue('token', $token);
+            $statement->execute();
+        } catch (\Exception $e) {
+            throw new RuntimeException('Something went wrong while invalidating a session', -1, $e);
+        }
     }
 
     /**
      * Persists provided session
      *
      * @param PersistentSession $session
+     * @throws RuntimeException
      */
     public function persistSession(PersistentSession $session)
     {
-        $statement = $this->pdo->prepare(
-            'INSERT INTO :table '
-            . 'SET `token` = :token, `expiration_date` = :expirationDate, `identity_id`=:identityId, `valid` = :valid'
-        );
-        $statement->bindValue('table', $this->tableName);
-        $statement->bindValue('token', $session->getToken());
-        $statement->bindValue('expirationDate', $session->getExpirationDate()->format('Y-m-d H:i:s'));
-        $statement->bindValue(
-            'identityId',
-            method_exists($session->getIdentity(), 'getId') ? $session->getIdentity()->getid() : null
-        );
-        $statement->bindValue('valid', $session->isValid() ? '1' : '0');
-        $statement->execute();
+        try {
+            $statement = $this->pdo->prepare(
+                'INSERT INTO :table SET '
+                . '`token` = :token, `expiration_date` = :expirationDate, `identity_id`=:identityId, `valid` = :valid'
+            );
+            $statement->bindValue('table', $this->tableName);
+            $statement->bindValue('token', $session->getToken());
+            $statement->bindValue('expirationDate', $session->getExpirationDate()->format('Y-m-d H:i:s'));
+            $statement->bindValue(
+                'identityId',
+                method_exists($session->getIdentity(), 'getId') ? $session->getIdentity()->getid() : null
+            );
+            $statement->bindValue('valid', $session->isValid() ? '1' : '0');
+            $statement->execute();
+        } catch (\Exception $e) {
+            throw new RuntimeException('Something went wrong while persisting a session', -1, $e);
+        }
     }
 }

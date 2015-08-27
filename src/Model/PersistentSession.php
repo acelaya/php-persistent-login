@@ -2,8 +2,9 @@
 namespace Acelaya\PersistentLogin\Model;
 
 use Acelaya\PersistentLogin\Identity\IdentityProviderInterface;
+use Acelaya\PersistentLogin\Util\ArraySerializableInterface;
 
-class PersistentSession
+class PersistentSession implements ArraySerializableInterface
 {
     /**
      * @var string
@@ -107,5 +108,35 @@ class PersistentSession
     {
         $this->valid = $valid;
         return $this;
+    }
+
+    /**
+     * @param array $data
+     */
+    public function exchangeArray(array $data)
+    {
+        $this->setToken(isset($data['token']) ? $data['token'] : null)
+             ->setValid(isset($data['valid']) && $data['valid'] === true)
+             ->setExpirationDate(
+                 new \DateTime(isset($data['expiration_date']) ? $data['expiration_date'] : 'now')
+             );
+
+        // The identity should be provided by a callable
+        if (isset($data['identity']) && is_callable($data['identity'])) {
+            $this->setIdentity(call_user_func($data['identity']));
+        }
+    }
+
+    /**
+     * @return array
+     */
+    public function getArrayCopy()
+    {
+        return [
+            'token' => $this->token,
+            'expiration_date' => $this->expirationDate->format('Y-m-d H:i:s'),
+            'valid' => $this->valid,
+            'identity' => $this->identity
+        ];
     }
 }
