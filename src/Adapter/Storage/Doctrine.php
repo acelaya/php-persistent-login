@@ -3,8 +3,7 @@ namespace Acelaya\PersistentLogin\Adapter\Storage;
 
 use Acelaya\PersistentLogin\Adapter\StorageInterface;
 use Acelaya\PersistentLogin\Exception\RuntimeException;
-use Acelaya\PersistentLogin\Model\PersistentSession;
-use Acelaya\PersistentLogin\Util\ArraySerializableInterface;
+use Acelaya\PersistentLogin\Model\PersistentSessionInterface;
 use Doctrine\Common\Persistence\ObjectManager;
 
 class Doctrine implements StorageInterface
@@ -20,15 +19,15 @@ class Doctrine implements StorageInterface
 
     /**
      * @param ObjectManager $om
-     * @param string $sessionEntityClass The name of your entity implementing ArraySerializableInterface
+     * @param string $sessionEntityClass The name of your entity implementing PersistentSessionInterface
      */
     public function __construct(ObjectManager $om, $sessionEntityClass)
     {
         // If provided entity class cannot be serialized, throw an exception
-        if (! is_subclass_of($sessionEntityClass, 'Acelaya\PersistentLogin\Util\ArraySerializableInterface')) {
+        if (! is_subclass_of($sessionEntityClass, 'Acelaya\PersistentLogin\Model\PersistentSessionInterface')) {
             throw new RuntimeException(
-                'Returned entity cannot be serialized. '
-                . 'It should implement "Acelaya\PersistentLogin\Util\ArraySerializableInterface"'
+                'Invalid session class name provided. '
+                . 'It must implement "Acelaya\PersistentLogin\Model\PersistentSessionInterface"'
             );
         }
 
@@ -40,21 +39,13 @@ class Doctrine implements StorageInterface
      * Tries to find a persistent session based on provided token
      *
      * @param string $token
-     * @return PersistentSession|null
+     * @return PersistentSessionInterface|null
      */
     public function findSessionByToken($token)
     {
-        $entity = $this->om->getRepository($this->sessionEntityClass)->findOneBy([
+        return $this->om->getRepository($this->sessionEntityClass)->findOneBy([
             'token' => $token
         ]);
-        if ($entity === null) {
-            return null;
-        }
-
-        $session = new PersistentSession();
-        $session->exchangeArray($entity->getArrayCopy());
-
-        return $session;
     }
 
     /**
@@ -65,35 +56,42 @@ class Doctrine implements StorageInterface
      */
     public function invalidateSessionByToken($token)
     {
-        $entity = $this->om->getRepository($this->sessionEntityClass)->findOneBy([
-            'token' => $token
-        ]);
-        if (! isset($entity)) {
-            return;
-        }
+        try {
+            $entity = $this->om->getRepository($this->sessionEntityClass)->findOneBy([
+                'token' => $token
+            ]);
+            if (! isset($entity)) {
+                return;
+            }
 
-        $this->om->remove($entity);
-        $this->om->flush();
+            $this->om->remove($entity);
+            $this->om->flush();
+        } catch (\Exception $e) {
+            throw new RuntimeException('Something went wrong while invalidating a session', -1, $e);
+        }
     }
 
     /**
      * Persists provided session
      *
-     * @param PersistentSession $session
+     * @param PersistentSessionInterface $session
      * @throws RuntimeException
      */
-    public function persistSession(PersistentSession $session)
+    public function persistSession(PersistentSessionInterface $session)
     {
         try {
+            $class = $this->sessionEntityClass;
+            /** @var PersistentSessionInterface $entity */
+            $entity = new $class();
+            $entity->setIdentity($session->getIdentity())
+                   ->setExpirationDate($session->getExpirationDate())
+                   ->setToken($session->getToken())
+                   ->setValid($session->isValid());
 
+            $this->om->persist($entity);
+            $this->om->flush();
         } catch (\Exception $e) {
-
+            throw new RuntimeException('Something went wrong while persisting a session', -1, $e);
         }
-        $class = $this->sessionEntityClass;
-        /** @var ArraySerializableInterface $entity */
-        $entity = new $class();
-        $entity->exchangeArray($session->getArrayCopy());
-        $this->om->persist($entity);
-        $this->om->flush();
     }
 }

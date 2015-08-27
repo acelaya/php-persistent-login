@@ -4,6 +4,7 @@ namespace Acelaya\PersistentLogin\Adapter\Storage;
 use Acelaya\PersistentLogin\Adapter\StorageInterface;
 use Acelaya\PersistentLogin\Exception\RuntimeException;
 use Acelaya\PersistentLogin\Model\PersistentSession;
+use Acelaya\PersistentLogin\Model\PersistentSessionInterface;
 
 class Pdo implements StorageInterface
 {
@@ -26,7 +27,7 @@ class Pdo implements StorageInterface
      * Tries to find a persistent session based on provided token
      *
      * @param string $token
-     * @return PersistentSession|null
+     * @return PersistentSessionInterface|null
      */
     public function findSessionByToken($token)
     {
@@ -63,10 +64,10 @@ class Pdo implements StorageInterface
     /**
      * Persists provided session
      *
-     * @param PersistentSession $session
+     * @param PersistentSessionInterface $session
      * @throws RuntimeException
      */
-    public function persistSession(PersistentSession $session)
+    public function persistSession(PersistentSessionInterface $session)
     {
         try {
             $statement = $this->pdo->prepare(
@@ -78,7 +79,9 @@ class Pdo implements StorageInterface
             $statement->bindValue('expirationDate', $session->getExpirationDate()->format('Y-m-d H:i:s'));
             $statement->bindValue(
                 'identityId',
-                method_exists($session->getIdentity(), 'getId') ? $session->getIdentity()->getid() : null
+                is_scalar($session->getIdentity()) ? $session->getIdentity() : (
+                    method_exists($session->getIdentity(), 'getId') ? $session->getIdentity()->getid() : null
+                )
             );
             $statement->bindValue('valid', $session->isValid() ? '1' : '0');
             $statement->execute();
