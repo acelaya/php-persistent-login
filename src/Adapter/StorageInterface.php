@@ -2,7 +2,7 @@
 namespace Acelaya\PersistentLogin\Adapter;
 
 use Acelaya\PersistentLogin\Exception\RuntimeException;
-use Acelaya\PersistentLogin\Model\PersistentSession;
+use Acelaya\PersistentLogin\Model\PersistentSessionInterface;
 
 interface StorageInterface
 {
@@ -10,7 +10,7 @@ interface StorageInterface
      * Tries to find a persistent session based on provided token
      *
      * @param string $token
-     * @return PersistentSession|null
+     * @return PersistentSessionInterface|null
      */
     public function findSessionByToken($token);
 
@@ -25,8 +25,8 @@ interface StorageInterface
     /**
      * Persists provided session
      *
-     * @param PersistentSession $session
+     * @param PersistentSessionInterface $session
      * @throws RuntimeException
      */
-    public function persistSession(PersistentSession $session);
+    public function persistSession(PersistentSessionInterface $session);
 }

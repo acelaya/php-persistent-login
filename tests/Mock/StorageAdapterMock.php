@@ -3,6 +3,7 @@ namespace AcelayaTest\PersistentLogin\Mock;
 
 use Acelaya\PersistentLogin\Adapter\StorageInterface;
 use Acelaya\PersistentLogin\Model\PersistentSession;
+use Acelaya\PersistentLogin\Model\PersistentSessionInterface;
 
 class StorageAdapterMock implements StorageInterface
 {
@@ -23,7 +24,7 @@ class StorageAdapterMock implements StorageInterface
      * Tries to find a persistent session based on provided token
      *
      * @param string $token
-     * @return PersistentSession|null
+     * @return PersistentSessionInterface|null
      */
     public function findSessionByToken($token)
     {
@@ -43,9 +44,9 @@ class StorageAdapterMock implements StorageInterface
     /**
      * Persists provided session
      *
-     * @param PersistentSession $session
+     * @param PersistentSessionInterface $session
      */
-    public function persistSession(PersistentSession $session)
+    public function persistSession(PersistentSessionInterface $session)
     {
         $this->sessions[$session->getToken()] = $session;
     }
