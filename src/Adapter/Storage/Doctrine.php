@@ -1,12 +1,11 @@
 <?php
 namespace Acelaya\PersistentLogin\Adapter\Storage;
 
-use Acelaya\PersistentLogin\Adapter\StorageInterface;
 use Acelaya\PersistentLogin\Exception\RuntimeException;
 use Acelaya\PersistentLogin\Model\PersistentSessionInterface;
 use Doctrine\Common\Persistence\ObjectManager;
 
-class Doctrine implements StorageInterface
+class Doctrine extends AbstractStorage
 {
     /**
      * @var ObjectManager
@@ -21,18 +20,10 @@ class Doctrine implements StorageInterface
      * @param ObjectManager $om
      * @param string $sessionEntityClass The name of your entity implementing PersistentSessionInterface
      */
-    public function __construct(ObjectManager $om, $sessionEntityClass)
+    public function __construct(ObjectManager $om, $sessionEntityClass = null)
     {
-        // If provided entity class cannot be serialized, throw an exception
-        if (! is_subclass_of($sessionEntityClass, 'Acelaya\PersistentLogin\Model\PersistentSessionInterface')) {
-            throw new RuntimeException(
-                'Invalid session class name provided. '
-                . 'It must implement "Acelaya\PersistentLogin\Model\PersistentSessionInterface"'
-            );
-        }
-
+        parent::__construct($sessionEntityClass);
         $this->om = $om;
-        $this->sessionEntityClass = $sessionEntityClass;
     }
 
     /**
@@ -80,9 +71,7 @@ class Doctrine implements StorageInterface
     public function persistSession(PersistentSessionInterface $session)
     {
         try {
-            $class = $this->sessionEntityClass;
-            /** @var PersistentSessionInterface $entity */
-            $entity = new $class();
+            $entity = $this->createSessionObject();
             $entity->setIdentity($session->getIdentity())
                    ->setExpirationDate($session->getExpirationDate())
                    ->setToken($session->getToken())

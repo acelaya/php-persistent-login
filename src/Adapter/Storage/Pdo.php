@@ -1,12 +1,11 @@
 <?php
 namespace Acelaya\PersistentLogin\Adapter\Storage;
 
-use Acelaya\PersistentLogin\Adapter\StorageInterface;
 use Acelaya\PersistentLogin\Exception\RuntimeException;
 use Acelaya\PersistentLogin\Model\PersistentSession;
 use Acelaya\PersistentLogin\Model\PersistentSessionInterface;
 
-class Pdo implements StorageInterface
+class Pdo extends AbstractStorage
 {
     /**
      * @var \PDO
@@ -17,8 +16,9 @@ class Pdo implements StorageInterface
      */
     protected $tableName;
 
-    public function __construct(\PDO $pdo, $tableName = 'persistent_session')
+    public function __construct(\PDO $pdo, $tableName = 'persistent_session', $sessionClassName = null)
     {
+        parent::__construct($sessionClassName);
         $this->pdo = $pdo;
         $this->tableName = $tableName;
     }
@@ -31,16 +31,28 @@ class Pdo implements StorageInterface
      */
     public function findSessionByToken($token)
     {
-        $statement = $this->pdo->prepare('SELECT * FROM :table WHERE `token` = :token');
+        $statement = $this->pdo->prepare('SELECT * FROM :table WHERE `token` = :token LIMIT 1');
         $statement->bindValue('table', $this->tableName);
         $statement->bindValue('token', $token);
         $result = $statement->fetch(\PDO::FETCH_ASSOC);
+        if (! $result) {
+            return null;
+        }
 
-        $session = new PersistentSession();
-        // TODO Set the identity provider callable somehow
-        $session->exchangeArray($result);
+        $this->validateResult($result);
+
+        $session = $this->createSessionObject();
+        $session->setValid($result['valid'] === 1)
+                ->setToken($result['token'])
+                ->setIdentity($result['identity']) // TODO This has to be an IdentityProvider instance
+                ->setExpirationDate(new \DateTime($result['expiration_date']));
 
         return $session;
+    }
+
+    protected function validateResult(array $result)
+    {
+
     }
 
     /**
