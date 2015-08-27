@@ -7,6 +7,8 @@ use Psr\Http\Message\ServerRequestInterface;
 
 class Psr7Http implements TokenInterface
 {
+    const COOKIE_PATTERN = '%s=%s; path=/; expires=%s';
+
     /**
      * @var ServerRequestInterface;
      */
@@ -52,7 +54,7 @@ class Psr7Http implements TokenInterface
     public function setToken($value, \DateTime $expirationDate)
     {
         return $this->response->withHeader('Set-Cookie', sprintf(
-            '%s=%s; path=/; expires:%s',
+            self::COOKIE_PATTERN,
             self::DEFAULT_TOKEN_NAME,
             $value,
             $expirationDate->getTimestamp()
@@ -66,8 +68,9 @@ class Psr7Http implements TokenInterface
     public function invalidateToken()
     {
         return $this->response->withHeader('Set-Cookie', sprintf(
-            '%s=; path=/; expires:%s',
+            self::COOKIE_PATTERN,
             self::DEFAULT_TOKEN_NAME,
+            '',
             time() - 86400
         ));
     }
