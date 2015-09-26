@@ -35,5 +35,12 @@
         "psr-4": {
             "AcelayaTest\\PersistentLogin\\": "tests"
         }
+    },
+    "suggest": {
+        "zendframework/zend-http": "To use the ZF2Http token adapter",
+        "psr/http-message": "To use the Psr7Http token adapter",
+        "slim/slim": "To use the SlimHttp token adapter. For v3 or greater, use the Psr7Http token adapter",
+        "doctrine/common": "To use the Doctrine storage adapter",
+        "ext-pdo": "To use the Pdo storage adapter"
     }
 }
