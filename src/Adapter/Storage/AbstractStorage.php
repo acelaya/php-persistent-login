@@ -3,11 +3,12 @@ namespace Acelaya\PersistentLogin\Adapter\Storage;
 
 use Acelaya\PersistentLogin\Adapter\StorageInterface;
 use Acelaya\PersistentLogin\Exception\RuntimeException;
+use Acelaya\PersistentLogin\Model\PersistentSession;
 use Acelaya\PersistentLogin\Model\PersistentSessionInterface;
 
 abstract class AbstractStorage implements StorageInterface
 {
-    const DEFAULT_SESSION_CLASS_NAME = 'Acelaya\PersistentLogin\Model\PersistentSession';
+    const DEFAULT_SESSION_CLASS_NAME = PersistentSession::class;
 
     /**
      * @var string
@@ -21,11 +22,11 @@ abstract class AbstractStorage implements StorageInterface
         }
 
         // If provided entity class cannot be serialized, throw an exception
-        if (! is_subclass_of($sessionClassName, 'Acelaya\PersistentLogin\Model\PersistentSessionInterface')) {
-            throw new RuntimeException(
-                'Invalid session class name provided. '
-                . 'It must implement "Acelaya\PersistentLogin\Model\PersistentSessionInterface"'
-            );
+        if (! is_subclass_of($sessionClassName, PersistentSessionInterface::class)) {
+            throw new RuntimeException(sprintf(
+                'Invalid session class name provided. It must implement "%s"',
+                PersistentSessionInterface::class
+            ));
         }
 
         $this->sessionClass = $sessionClassName;
